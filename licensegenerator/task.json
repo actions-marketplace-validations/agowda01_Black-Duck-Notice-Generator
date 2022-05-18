@@ -10,7 +10,7 @@
   "version": {
     "Major": 0,
     "Minor": 0,
-    "Patch": 1
+    "Patch": 3
   },
   "instanceNameFormat": "Generate Notice File",
   "inputs": [
@@ -53,6 +53,38 @@
       "defaultValue": "../license.txt",
       "required": true,
       "helpMarkDown": "Path for writing notice file"
+    },
+    {
+      "name": "localNoticeFileDirectory",
+      "type": "string",
+      "label": "Directory of local notice file",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "Directory of local notice file used by Black Duck"
+    },
+    {
+      "name": "generateNoticeFile",
+      "type": "boolean",
+      "label": "Boolean on whether to create notice file",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "Boolean on whether to trigger generation of notice file in Black Duck"
+    },
+    {
+      "name": "getLatestNoticeFile",
+      "type": "boolean",
+      "label": "Boolean on whether to get latest notice file",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "Boolean on whether to get latest notice file from Black Duck"
+    },
+    {
+      "name": "modifyNoticeFile",
+      "type": "boolean",
+      "label": "Boolean on whether to modify notice file",
+      "defaultValue": "false",
+      "required": false,
+      "helpMarkDown": "Boolean on whether to modify notice file by replacing some of the Black Duck generated text"
     }
   ],
   "execution": {

@@ -1,41 +1,41 @@
 {
-    "manifestVersion": 1,
-    "id": "alle-bd-license-generator",
-    "name": "Black Duck License Generator",
-    "version": "0.0.1",
-    "publisher": "ProductTech",
-    "targets": [
-        {
-            "id": "Microsoft.VisualStudio.Services"
-        }
-    ],
-    "description": "Simple generation of Black Duck notice file",
-    "categories": [
-        "Azure Pipelines"
-    ],
-    "icons": {
-        "default": "images/extension-icon.png"
+  "manifestVersion": 1,
+  "id": "alle-bd-license-generator",
+  "name": "Black Duck License Generator",
+  "version": "0.0.3",
+  "publisher": "ProductTech",
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "description": "Simple generation of Black Duck notice file",
+  "categories": [
+    "Azure Pipelines"
+  ],
+  "icons": {
+    "default": "images/extension-icon.png"
+  },
+  "files": [
+    {
+      "path": "licensegenerator"
     },
-    "files": [
-        {
-            "path": "licensegenerator"
-        },
-        {
-            "path": "./licensegenerator/node_modules/vss-web-extension-sdk/lib",
-            "addressable": true,
-            "packagePath": "lib"
-        }
-    ],
-    "contributions": [
-        {
-            "id": "alle-bd-license-generator",
-            "type": "ms.vss-distributed-task.task",
-            "targets": [
-                "ms.vss-distributed-task.tasks"
-            ],
-            "properties": {
-                "name": "licensegenerator"
-            }
-        }
-    ]
+    {
+      "path": "./licensegenerator/node_modules/vss-web-extension-sdk/lib",
+      "addressable": true,
+      "packagePath": "lib"
+    }
+  ],
+  "contributions": [
+    {
+      "id": "alle-bd-license-generator",
+      "type": "ms.vss-distributed-task.task",
+      "targets": [
+        "ms.vss-distributed-task.tasks"
+      ],
+      "properties": {
+        "name": "licensegenerator"
+      }
+    }
+  ]
 }

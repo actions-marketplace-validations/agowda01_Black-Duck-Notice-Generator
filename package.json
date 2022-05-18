@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "install": "cd ./licensegenerator && npm install",
-    "build": "cd ./licensegenerator && npm run build",
-    "package": "tfx extension create --manifest-globs vss-extension.json",
+    "build": "npm --prefix ./licensegenerator run build",
+    "package": "tfx extension create --manifest-globs vss-extension.json --output-path blackducklicensegenerator.vsix",
     "create": "npm run install && npm run build && npm run package"
   },
   "keywords": [],

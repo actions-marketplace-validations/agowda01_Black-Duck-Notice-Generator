@@ -1,40 +1,173 @@
 trigger:
-- none
+- main
 
 pool:
   vmImage: 'windows-2022'
 
-steps:
-- task: npmAuthenticate@0
-  inputs:
-    workingFile: .npmrc
+variables:
+  Blackduck_Project: IT-Allegion-NA-SW-FO-ProductTech-BDLicense-Build
+  Blackduck_Version: master-CIBuild
+  Blackduck_LicenseFile: Black_Duck_Notices_Report.txt
+  Blackduck_NoticeFileName: ${{ replace(format('{0}_{1}_{2}', variables.Blackduck_Project, variables.Blackduck_Version, variables.Blackduck_LicenseFile), '-', '_') }}
 
-- task: NodeTool@0
-  inputs:
-    versionSpec: '10.x'
-  displayName: 'Use Node 10'
+stages:
+- stage: build
+  jobs:
+  - job: buildjob
+    steps:
+    - task: npmAuthenticate@0
+      inputs:
+        workingFile: $(System.DefaultWorkingDirectory)/licensegenerator/.npmrc
 
-- script: npm i -g tfx-cli
-  displayName: 'Install TFX-CLI'
+    - task: npmAuthenticate@0
+      inputs:
+        workingFile: $(System.DefaultWorkingDirectory)/.npmrc
 
-- script: node version.js $(taskVersion)
-  displayName: 'Set Task Version'
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '10.x'
+      displayName: 'Use Node 10'
 
-- script: cd licensegenerator && npm install
-  displayName: 'Install Packages'
+    - task: TfxInstaller@3
+      inputs:
+        version: "v0.11.x"
+    
+    - task: QueryAzureDevOpsExtensionVersion@3
+      name: packageversion
+      inputs:
+        connectTo: 'VsTeam'
+        connectedServiceName: 'ado-extension-connection'
+        publisherId: 'ProductTech'
+        extensionId: 'alle-bd-license-generator'
+    
+    - task: Powershell@2
+      inputs:
+        targetType: 'filePath'
+        pwsh: true
+        filePath: $(System.DefaultWorkingDirectory)/version.ps1
+        arguments: >
+          -VssExtensionJsonPath $(System.DefaultWorkingDirectory)/vss-extension.json 
+          -TaskJsonPath $(System.DefaultWorkingDirectory)/licensegenerator/task.json -MarketPlaceVersion $(packageversion.Extension.Version)
+      displayName: 'Update Version Numbers'
 
-- task: Npm@1
-  displayName: 'Build Package'
-  inputs:
-    command: custom
-    customCommand: 'run build'
+    - script: cd licensegenerator && npm install
+      displayName: 'Install Packages'
 
-- task: Npm@1
-  displayName: 'Create Package'
-  inputs:
-    command: custom
-    customCommand: 'run package'
+    - task: Npm@1
+      displayName: 'Build Package'
+      inputs:
+        command: custom
+        customCommand: 'run build'
 
-- publish: 'ProductTech.alle-package-diff-$(taskVersion).vsix'
-  artifact: task
-  displayName: 'Publish Task'
+    - task: synopsys-detect.synopsys-detect.synopsys-detect-task.SynopsysDetectTask@6
+      displayName: 'BlackDuck Scan'
+      inputs:
+        BlackDuckService: blackduck-service-token
+        DetectArguments: |
+          --detect.project.name="$(Blackduck_Project)"
+          --detect.project.version.name="$(Blackduck_Version)"
+          --detect.parallel.processors=-1
+          --logging.level.com.synopsys.integration=INFO
+          --detect.bom.aggregate.name="$(Blackduck_Project)-$(Blackduck_Version)-BOM"
+          --detect.code.location.name="$(Blackduck_Project)-$(Blackduck_Version)-Scan"
+          --detect.blackduck.signature.scanner.snippet.matching=SNIPPET_MATCHING
+          --detect.wait.for.results
+          --detect.scan.output.path=$(Agent.TempDirectory)\bdscan-$(Build.SourceVersion)
+          --detect.bdio.output.path=$(Agent.TempDirectory)\bdbdio-$(Build.SourceVersion)
+          --detect.npm.include.dev.dependencies=true
+          --detect.source.path="$(System.DefaultWorkingDirectory)/licensegenerator"
+          --detect.notices.report=true
+          --detect.notices.report.path="$(System.DefaultWorkingDirectory)"
+      continueOnError: true
+    
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Pipeline Artifact: LicenseFile'
+      inputs:
+        targetPath: '$(System.DefaultWorkingDirectory)/$(Blackduck_NoticeFileName)'
+        artifact: licensefile
+
+    # - task: alle-bd-license-generator@0
+    #   inputs:
+    #     blackduckconnection: 'blackduck-service-token'
+    #     projectName: '$(Blackduck_Project)'
+    #     versionName: '$(Blackduck_Version)'
+    #     noticeFilePath: '$(System.DefaultWorkingDirectory)'
+
+    - task: Npm@1
+      displayName: 'Create Package'
+      inputs:
+        command: custom
+        customCommand: 'run package'
+
+    - publish: '$(System.DefaultWorkingDirectory)/blackducklicensegenerator.vsix'
+      artifact: task
+      displayName: 'Publish Task'
+
+- stage: dev
+  dependsOn: build
+  condition: and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI', 'Manual'))
+  jobs:
+  - deployment: devdeploymentjob
+    environment: Task-Dev
+    variables: 
+      taskVersion: $[stageDependencies.build.buildjob.outputs['packageversion.Extension.Version']]
+    pool:
+      vmImage: 'windows-2022'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - download: current
+              artifact: task
+
+            - task: TfxInstaller@3
+              inputs:
+                version: "v0.11.x"
+
+            - task: PublishAzureDevOpsExtension@3
+              inputs:
+                connectTo: 'VsTeam'
+                connectedServiceName: 'ado-extension-connection'
+                fileType: 'vsix'
+                vsixFile: '$(Pipeline.Workspace)/task/blackducklicensegenerator.vsix'
+                publisherId: 'ProductTech'
+                extensionId: 'alle-bd-license-generator'
+                extensionName: 'Black Duck License Generator'
+                updateTasksVersion: false
+                extensionVisibility: 'private'
+                extensionPricing: 'free'
+                extensionTag: '-dev'
+
+- stage: prod
+  dependsOn: build
+  condition: and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI', 'Manual'))
+  jobs:
+  - deployment: proddeploymentjob
+    environment: Task-Marketplace
+    variables: 
+      taskVersion: $[stageDependencies.build.buildjob.outputs['packageversion.Extension.Version']]
+    pool:
+      vmImage: 'windows-2022'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - download: current
+              artifact: task
+
+            - task: TfxInstaller@3
+              inputs:
+                version: "v0.11.x"
+
+            - task: PublishAzureDevOpsExtension@3
+              inputs:
+                connectTo: 'VsTeam'
+                connectedServiceName: 'ado-extension-connection'
+                fileType: 'vsix'
+                vsixFile: '$(Pipeline.Workspace)/task/blackducklicensegenerator.vsix'
+                publisherId: 'ProductTech'
+                extensionId: 'alle-bd-license-generator'
+                extensionName: 'Black Duck License Generator'
+                updateTasksVersion: false
+                extensionVisibility: 'private'
+                extensionPricing: 'free'

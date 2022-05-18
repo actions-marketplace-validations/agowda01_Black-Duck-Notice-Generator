@@ -36,8 +36,7 @@ async function run() {
     try {
         const reportUrl = await blackduckNotice.start(bdProjectName, bdVersionName, noticeFilePath);
         task.uploadArtifact('LICENSEFILE', noticeFilePath, 'License');
-        task.setResult(task.TaskResult.Succeeded, `Successfully written file to ${noticeFilePath
-}`)
+        task.setResult(task.TaskResult.Succeeded, `Successfully written file to ${noticeFilePath}`)
     } catch (error) {
         task.setResult(task.TaskResult.Failed, `Task failed: ${error}`);        
     }
