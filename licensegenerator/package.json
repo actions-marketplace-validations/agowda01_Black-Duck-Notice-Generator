@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p tsconfig.build.json",
     "begin": "node ./dist/index.js",
-    "start": "npm run build && npm run begin"
+    "start": "npm run build && npm run begin",
+    "debug": "tsc -p tsconfig.debug.json"
   },
   "keywords": [],
   "author": "",

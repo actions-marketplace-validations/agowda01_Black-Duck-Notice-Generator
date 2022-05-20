@@ -4,6 +4,7 @@ import { IBlackDuckToken } from "../models/IBlackDuckToken";
 import { IBlackDuckVersion } from "../models/IBlackDuckVersion";
 import { IBlackDuckReportList, IBlackDuckReport, IBlackDuckReportRequestBody } from '../models/IBlackDuckReport';
 import * as https from 'https';
+import * as crypto from 'crypto';
 
 export class BlackDuckAPICalls {
     public bdToken: string;
@@ -59,27 +60,30 @@ export class BlackDuckAPICalls {
         return await this.getRequest(_url, options);
     }
 
-    // async createNotice(_path: string, _bearerToken:string): Promise<any> {
-    //     let options: IRequestOptions = {
-    //         port: 443,
-    //         headers: {
-    //             'Authorization': `Bearer ${_bearerToken}`,
-    //             'Accept': 'application/vnd.blackducksoftware.report-4+json'
-    //         },
-    //         method: 'POST',
-    //         hostname: this.baseUrl,
-    //         path: _path
-    //     }
+    async postNotice(_path: string, _bearerToken:string): Promise<any> {
+        console.log("Create Notice File...")
+        let options: IRequestOptions = {
+            port: 443,
+            headers: {
+                'Authorization': `Bearer ${_bearerToken}`,
+                'Content-Type': 'application/vnd.blackducksoftware.report-4+json'
+            },
+            method: 'POST',
+            hostname: this.baseUrl,
+            path: _path
+        }
 
-    //     let requestBody: IBlackDuckReportRequestBody = {
-    //         reportFormat: 'TEXT',
-    //         locale: 'en_US',
-    //         versionId: '123456789',
-    //         categories: ['COPYRIGHT_TEXT'],
-    //         reportType: 'VERSION_LICENSE'
-    //     }
-    //     return await this.request(options);
-    // }
+        const versionId = [8, 4, 4, 4, 12].map(n => crypto.randomBytes(n / 2).toString("hex")).join("-");
+
+        let requestBody: IBlackDuckReportRequestBody = {
+            reportFormat: 'TEXT',
+            locale: 'en_US',
+            versionId: versionId,
+            categories: ['COPYRIGHT_TEXT'],
+            reportType: 'VERSION_LICENSE'
+        }
+        return await this.request(options, JSON.stringify(requestBody));
+    }
 
     async getReportContent(_url: string, _bearerToken: string): Promise<IBlackDuckReport> {
         console.log("Get Report Content...")
@@ -90,7 +94,20 @@ export class BlackDuckAPICalls {
                 'Accept': 'application/vnd.blackducksoftware.report-4+json'
             }
         }
-        return await this.getRequest(_url, options);
+        return await this.getRequest(_url, options, this.getAltReportContent);
+    }
+
+    async getAltReportContent(malformedBody: string): Promise<IBlackDuckReport>{
+        const regex = /\"fileContent\":\"(.*)\",\"fileNamePrefix\"/;
+        const getContent = malformedBody.match(regex);
+        const resp:IBlackDuckReport = {
+            reportContent: [{
+                fileName: "malformedlicense.txt",
+                fileContent: getContent[1],
+                fileNamePrefix: "malformedlicense"
+            }]
+        }
+        return resp
     }
 
     async getReportDetails(_url: string, _bearerToken: string): Promise<IBlackDuckReportList> {
@@ -105,10 +122,10 @@ export class BlackDuckAPICalls {
         return await this.getRequest(_url, options);
     }   
 
-    async request(options: IRequestOptions, data?:any ): Promise<any> {
+    async request(options: IRequestOptions, data?:any): Promise<any> {
         return new Promise((resolve, reject) => {
             const req = https.request(options, (res) => {
-                if (res.statusCode > 200 && res.statusCode < 300)
+                if (res.statusCode > 400 && res.statusCode < 500)
                 {
                     return reject(new Error(`status code ${res.statusCode}`));
                 }
@@ -122,9 +139,9 @@ export class BlackDuckAPICalls {
                     {
                         response = JSON.parse(Buffer.concat(body).toString());
                     }
-                    catch (error)
+                    catch(error)
                     {
-                        reject(error);
+                        reject(error)
                     }
                     resolve(response);
                 })
@@ -133,11 +150,19 @@ export class BlackDuckAPICalls {
             req.on('error', (error) => {
                 reject(error);
             });
+            if(data != null){
+                try {
+                    req.write(data);
+                }
+                catch(error){
+                    resolve(error);
+                }
+            } 
             req.end();
         });
     }
 
-    async getRequest(url: string, options: IRequestOptions): Promise<any> {
+    async getRequest(url: string, options: IRequestOptions, errorProcess?: Function): Promise<any> {
         return new Promise((resolve, reject) => {
             const req = https.get(url, options, (res) => {
                 if (res.statusCode > 200 && res.statusCode < 300)
@@ -156,7 +181,15 @@ export class BlackDuckAPICalls {
                     }
                     catch (error)
                     {
-                        reject(error);
+                        if (errorProcess != null)
+                        {
+
+                            response = errorProcess(Buffer.concat(body).toString());
+                        }
+                        else
+                        {
+                            reject(error)
+                        }
                     }
                     resolve(response);
                 })

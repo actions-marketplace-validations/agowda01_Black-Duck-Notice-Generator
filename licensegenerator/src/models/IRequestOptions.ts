@@ -5,6 +5,7 @@ export interface IRequestOptions {
     method?: string,
     headers: {
         'Authorization': string,
-        'Accept': string
+        'Accept'?: string,
+        'Content-Type'?: string
     }
 }

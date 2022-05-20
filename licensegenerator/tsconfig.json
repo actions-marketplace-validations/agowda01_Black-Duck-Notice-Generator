@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
-    "outDir": "dist",
-    "target": "es5",           
+    "target": "es5", 
+    "module": "commonjs",          
     "removeComments": true,                       
     "strict": false,
     "moduleResolution": "node",
     "resolveJsonModule": true,                 
     "esModuleInterop": true,                  
-    "skipLibCheck": true,                     
+    "skipLibCheck": true,               
     "forceConsistentCasingInFileNames": true,
     "types": [
         "vss-web-extension-sdk",

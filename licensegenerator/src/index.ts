@@ -10,7 +10,12 @@ async function run() {
     const bdProjectName = task.getInput('projectName', true);
     const bdVersionName = task.getInput('versionName', true);
     const noticeFilePath = task.getInput('noticeFilePath', true);
-    const baseUrl = "allegion.blackducksoftware.com";
+    const localNoticeFileDirectory = task.getInput('localNoticeFileDirectory', true);
+    const generateNoticeFile = task.getBoolInput('generateNoticeFile', false);
+    const getLatestNoticeFile = task.getBoolInput('getLatestNoticeFile', false);
+    const modifyNoticeFile = task.getBoolInput('modifyNoticeFile', false)
+    //const baseUrl = "allegion.blackducksoftware.com";
+    const baseUrl = "allegion-test.app.blackduck.com";
     let blackduckNotice: BlackDuckNotice;
 
     if (bdService === undefined && bdTkn === undefined)
@@ -34,9 +39,18 @@ async function run() {
     }
     /* Run BlackDuck API Calls */
     try {
-        const reportUrl = await blackduckNotice.start(bdProjectName, bdVersionName, noticeFilePath);
-        task.uploadArtifact('LICENSEFILE', noticeFilePath, 'License');
-        task.setResult(task.TaskResult.Succeeded, `Successfully written file to ${noticeFilePath}`)
+        if (getLatestNoticeFile){
+            const latestReport = await blackduckNotice.getLatestNoticeFile(noticeFilePath);
+            task.setResult(task.TaskResult.Succeeded, `Successfully written file to ${noticeFilePath}`);
+        }
+        if(generateNoticeFile){
+            const createReport = await blackduckNotice.createNoticeFile();
+            task.setResult(task.TaskResult.Succeeded, `Successfully posted notice file to Black Duck`);
+        }
+        if (modifyNoticeFile){
+            const modifyReport = await blackduckNotice.modifyNoticeFile(localNoticeFileDirectory, noticeFilePath);
+            task.setResult(task.TaskResult.Succeeded, `Successfully modified notice file to Black Duck`)
+        }
     } catch (error) {
         task.setResult(task.TaskResult.Failed, `Task failed: ${error}`);        
     }

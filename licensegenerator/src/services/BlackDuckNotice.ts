@@ -23,8 +23,7 @@ export class BlackDuckNotice extends BlackDuckAPICalls {
     async getLicenseReportUrl(version: IBlackDuckVersion): Promise<string> {
         const versionLinks = version.items[0]._meta.links;
         const reportRef = versionLinks.find( ({ rel }) => rel === "licenseReports");
-        const latestReportUrl = `${reportRef.href
-}?sort=createdat:desc&limit=1`;
+        const latestReportUrl = `${reportRef.href}?sort=createdat:desc&limit=1`;
         return latestReportUrl;
     }
 
@@ -35,22 +34,46 @@ export class BlackDuckNotice extends BlackDuckAPICalls {
         return reportContentUrl.href;
     }
 
+    async modTextContent(txt:string, bdPrjName:string, bdVerName:string): Promise<string>{
+        txt = txt.replace('Copyright 2022', '');
+        txt = txt.replace(`[${bdPrjName} : ${bdVerName}]`, '');
+        txt = txt.replace('Phase: DEVELOPMENT', '');
+        txt = txt.replace('Distribution: EXTERNAL', '');
+        txt = txt.trimStart();
+        return txt;
+    }
+
     async getContent(contentUrl: string, bdPrjName: string, bdVerName: string, noticeFilePath): Promise<void>{
         const reportDetails = await this.getReportContent(contentUrl, this.bearerToken);
-        let editContent = reportDetails.reportContent[0].fileContent;
-        editContent = editContent.replace('Copyright 2022', '');
-        editContent = editContent.replace(`[${bdPrjName} : ${bdVerName}]`, '');
-        editContent = editContent.replace('Phase: DEVELOPMENT', '');
-        editContent = editContent.replace('Distribution: EXTERNAL', '');
-        const content = editContent.trimStart();
+        console.log(reportDetails);
+        let contentText = reportDetails.reportContent[0].fileContent;
+        const content = await this.modTextContent(contentText, this.bdProjectName, this.bdVersionName);
         await fs.promises.writeFile(noticeFilePath, content);
     }
 
-    async start(bdProjectName: string, bdVersionName: string, noticeFilePath: string): Promise<void> {
+    async modifyNoticeFile(modifyNoticeDirectory: string, noticeFilePath: string): Promise<void> {
+        const regex = /-|\s/g;
+        const fileName = `${this.bdProjectName}_${this.bdVersionName}_Black_Duck_Notices_Report.txt`
+        const convertedFileName = fileName.replace(regex, '_');
+        const modifyFilePath = `${modifyNoticeDirectory}/${convertedFileName}`
+        const bufferText = fs.promises.readFile(modifyFilePath);
+        const txt = await bufferText.toString()
+        const modText = await this.modTextContent(txt, this.bdProjectName, this.bdVersionName);
+        await fs.promises.writeFile(noticeFilePath, modText);
+    }
+
+    async getLatestNoticeFile(noticeFilePath: string): Promise<void> {
         const versionDetails = await this.getBlackDuckVersionDetails();
         const latestReportUrl = await this.getLicenseReportUrl(versionDetails);
         const contentUrl = await this.getMostRecentReportUrl(latestReportUrl);
-        const content = await this.getContent(contentUrl, bdProjectName, bdVersionName, noticeFilePath);
+        const content = await this.getContent(contentUrl, this.bdProjectName, this.bdVersionName, noticeFilePath);
+    }
+
+    async createNoticeFile(): Promise<void>{
+        const versionDetails = await this.getBlackDuckVersionDetails();
+        const reportUrl = versionDetails.items[0]._meta.links.find(({ rel }) => rel === "licenseReports");
+        const reportPath = reportUrl.href.split(this.baseUrl)[1];
+        await this.postNotice(reportPath, this.bearerToken)
     }
 
 }
