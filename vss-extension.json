@@ -1,8 +1,8 @@
 {
   "manifestVersion": 1,
-  "id": "alle-bd-license-generator",
-  "name": "Black Duck License Generator",
-  "version": "0.0.3",
+  "id": "alle-bd-notices-extension",
+  "name": "Alle Notice File Generator",
+  "version": "0.0.1",
   "publisher": "ProductTech",
   "targets": [
     {
@@ -28,13 +28,13 @@
   ],
   "contributions": [
     {
-      "id": "alle-bd-license-generator",
+      "id": "handler",
       "type": "ms.vss-distributed-task.task",
       "targets": [
         "ms.vss-distributed-task.tasks"
       ],
       "properties": {
-        "name": "licensegenerator"
+        "name": "noticegenerator"
       }
     }
   ]

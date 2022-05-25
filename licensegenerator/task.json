@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
-  "id": "4b6bc620-40ac-41a9-a27a-cde89706439b",
-  "name": "alle-bd-license-generator",
+  "id": "4b6bc620-40ac-41a9-a27a-cde89706438b",
+  "name": "oss-notices",
   "friendlyName": "Alle BlackDuck Notice Generator",
   "description": "Simple generation of Black Duck notice file",
   "helpMarkDown": "",
@@ -10,7 +10,7 @@
   "version": {
     "Major": 0,
     "Minor": 0,
-    "Patch": 3
+    "Patch": 1
   },
   "instanceNameFormat": "Generate Notice File",
   "inputs": [
@@ -50,7 +50,7 @@
       "name": "noticeFilePath",
       "type": "string",
       "label": "Path to notice file",
-      "defaultValue": "../license.txt",
+      "defaultValue": "oss-notice-file.txt",
       "required": true,
       "helpMarkDown": "Path for writing notice file"
     },

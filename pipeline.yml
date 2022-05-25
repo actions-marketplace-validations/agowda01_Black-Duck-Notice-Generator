@@ -1,3 +1,5 @@
+name: '0.1$(rev:.r)'
+
 trigger:
 - main
 
@@ -31,24 +33,6 @@ stages:
     - task: TfxInstaller@3
       inputs:
         version: "v0.11.x"
-    
-    - task: QueryAzureDevOpsExtensionVersion@3
-      name: packageversion
-      inputs:
-        connectTo: 'VsTeam'
-        connectedServiceName: 'ado-extension-connection'
-        publisherId: 'ProductTech'
-        extensionId: 'alle-bd-license-generator'
-    
-    - task: Powershell@2
-      inputs:
-        targetType: 'filePath'
-        pwsh: true
-        filePath: $(System.DefaultWorkingDirectory)/version.ps1
-        arguments: >
-          -VssExtensionJsonPath $(System.DefaultWorkingDirectory)/vss-extension.json 
-          -TaskJsonPath $(System.DefaultWorkingDirectory)/licensegenerator/task.json -MarketPlaceVersion $(packageversion.Extension.Version)
-      displayName: 'Update Version Numbers'
 
     - script: cd licensegenerator && npm install
       displayName: 'Install Packages'
@@ -72,8 +56,8 @@ stages:
           --detect.code.location.name="$(Blackduck_Project)-$(Blackduck_Version)-Scan"
           --detect.blackduck.signature.scanner.snippet.matching=SNIPPET_MATCHING
           --detect.wait.for.results
-          --detect.scan.output.path=$(Agent.TempDirectory)\bdscan-$(Build.SourceVersion)
-          --detect.bdio.output.path=$(Agent.TempDirectory)\bdbdio-$(Build.SourceVersion)
+          --detect.scan.output.path=$(Agent.TempDirectory)/bdscan-$(Build.SourceVersion)
+          --detect.bdio.output.path=$(Agent.TempDirectory)/bdbdio-$(Build.SourceVersion)
           --detect.npm.include.dev.dependencies=true
           --detect.source.path="$(System.DefaultWorkingDirectory)/licensegenerator"
           --detect.notices.report=true
@@ -93,13 +77,22 @@ stages:
     #     versionName: '$(Blackduck_Version)'
     #     noticeFilePath: '$(System.DefaultWorkingDirectory)'
 
-    - task: Npm@1
-      displayName: 'Create Package'
+    - task: PackageAzureDevOpsExtension@3
+      displayName: 'Package Extension: Notice Generator'
+      name: 'packageStep'
       inputs:
-        command: custom
-        customCommand: 'run package'
+        rootFolder: '$(System.DefaultWorkingDirectory)'
+        outputPath: '$(Build.ArtifactStagingDirectory)/blackducklicensegenerator.vsix'
+        publisherId: 'ProductTech'
+        extensionId: 'alle-bd-notices-extension'
+        extensionTag: '-build'
+        extensionName: 'Black Duck OSS Notice Generator'
+        extensionVersion: '$(Build.BuildNumber)'
+        updateTasksVersion: true
+        updateTasksVersionType: patch
+        extensionVisibility: private
 
-    - publish: '$(System.DefaultWorkingDirectory)/blackducklicensegenerator.vsix'
+    - publish: '$(Build.ArtifactStagingDirectory)/blackducklicensegenerator.vsix'
       artifact: task
       displayName: 'Publish Task'
 
@@ -109,8 +102,6 @@ stages:
   jobs:
   - deployment: devdeploymentjob
     environment: Task-Dev
-    variables: 
-      taskVersion: $[stageDependencies.build.buildjob.outputs['packageversion.Extension.Version']]
     pool:
       vmImage: 'windows-2022'
     strategy:
@@ -144,8 +135,6 @@ stages:
   jobs:
   - deployment: proddeploymentjob
     environment: Task-Marketplace
-    variables: 
-      taskVersion: $[stageDependencies.build.buildjob.outputs['packageversion.Extension.Version']]
     pool:
       vmImage: 'windows-2022'
     strategy:
