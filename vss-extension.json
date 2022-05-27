@@ -34,7 +34,7 @@
         "ms.vss-distributed-task.tasks"
       ],
       "properties": {
-        "name": "noticegenerator"
+        "name": "licensegenerator"
       }
     }
   ]
