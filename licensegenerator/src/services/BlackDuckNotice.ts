@@ -4,6 +4,8 @@ import { IBlackDuckReportList, IBlackDuckReport } from '../models/IBlackDuckRepo
 import { IBlackDuckVersion } from '../models/IBlackDuckVersion';
 import { BlackDuckAPICalls } from './BlackDuckApiCalls';
 import * as fs from 'fs';
+import * as util from 'util'
+const delay = util.promisify(setTimeout);
 
 export class BlackDuckNotice extends BlackDuckAPICalls {
 
@@ -28,10 +30,29 @@ export class BlackDuckNotice extends BlackDuckAPICalls {
     }
 
     async getMostRecentReportUrl(reportUrl: string): Promise<string>{
-        const recentReportDetails = await this.getReportDetails(reportUrl, this.bearerToken);
+        let recentReportDetails = await this.getReportDetails(reportUrl, this.bearerToken);
+        if (recentReportDetails.totalCount <= 0){
+            try {
+                await this.postNotice(reportUrl, this.bearerToken)
+                recentReportDetails = await this.getReportDetails(reportUrl, this.bearerToken);
+                let numberOfchecks: number = 0;
+                while (recentReportDetails.items[0].status !== "COMPLETED" || numberOfchecks > 24)
+                {
+                    recentReportDetails = await this.checkNoticeState(reportUrl, 5000);
+                    numberOfchecks++;
+                }     
+            } catch (error) {
+                console.log(error)
+            }
+        }
         const reportContentLinks = recentReportDetails.items[0]._meta.links;
         const reportContentUrl = reportContentLinks.find( ({ rel }) => rel === "content");
         return reportContentUrl.href;
+    }
+
+    async checkNoticeState(reportUrl: string, timer: number): Promise<IBlackDuckReportList> {
+        const reportDetails: IBlackDuckReportList = await delay(timer, await this.getReportDetails(reportUrl, this.bearerToken));
+        return reportDetails;
     }
 
     async modTextContent(txt:string, bdPrjName:string, bdVerName:string): Promise<string>{
@@ -45,7 +66,6 @@ export class BlackDuckNotice extends BlackDuckAPICalls {
 
     async getContent(contentUrl: string, bdPrjName: string, bdVerName: string, noticeFilePath): Promise<void>{
         const reportDetails = await this.getReportContent(contentUrl, this.bearerToken);
-        console.log(reportDetails);
         let contentText = reportDetails.reportContent[0].fileContent;
         const content = await this.modTextContent(contentText, this.bdProjectName, this.bdVersionName);
         await fs.promises.writeFile(noticeFilePath, content);
@@ -75,5 +95,4 @@ export class BlackDuckNotice extends BlackDuckAPICalls {
         const reportPath = reportUrl.href.split(this.baseUrl)[1];
         await this.postNotice(reportPath, this.bearerToken)
     }
-
 }

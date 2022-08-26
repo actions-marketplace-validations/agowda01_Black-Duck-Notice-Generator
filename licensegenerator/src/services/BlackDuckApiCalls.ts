@@ -137,7 +137,9 @@ export class BlackDuckAPICalls {
                 res.on('end', () => {
                     try
                     {
-                        response = JSON.parse(Buffer.concat(body).toString());
+                        if(body.length > 0){
+                            response = JSON.parse(Buffer.concat(body).toString());
+                        }
                     }
                     catch(error)
                     {

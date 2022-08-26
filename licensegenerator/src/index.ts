@@ -1,5 +1,4 @@
 import * as task from 'azure-pipelines-task-lib/task';
-import { report } from 'process';
 import { DetectADOConstants } from './lib/BlackDuckConstants';
 import { IBlackDuckConfig } from './models/IBlackDuckConfig';
 import { BlackDuckNotice } from './services/BlackDuckNotice'
