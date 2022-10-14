@@ -4,7 +4,8 @@ import { IBlackDuckReportList, IBlackDuckReport } from '../models/IBlackDuckRepo
 import { IBlackDuckVersion } from '../models/IBlackDuckVersion';
 import { BlackDuckAPICalls } from './BlackDuckApiCalls';
 import * as fs from 'fs';
-import * as util from 'util'
+import * as util from 'util';
+import * as jszip from 'jszip';
 const delay = util.promisify(setTimeout);
 
 export class BlackDuckNotice extends BlackDuckAPICalls {
@@ -46,7 +47,7 @@ export class BlackDuckNotice extends BlackDuckAPICalls {
             }
         }
         const reportContentLinks = recentReportDetails.items[0]._meta.links;
-        const reportContentUrl = reportContentLinks.find( ({ rel }) => rel === "content");
+        const reportContentUrl = reportContentLinks.find( ({ rel }) => rel === "download");
         return reportContentUrl.href;
     }
 
@@ -65,10 +66,21 @@ export class BlackDuckNotice extends BlackDuckAPICalls {
     }
 
     async getContent(contentUrl: string, bdPrjName: string, bdVerName: string, noticeFilePath): Promise<void>{
-        const reportDetails = await this.getReportContent(contentUrl, this.bearerToken);
-        let contentText = reportDetails.reportContent[0].fileContent;
-        const content = await this.modTextContent(contentText, this.bdProjectName, this.bdVersionName);
-        await fs.promises.writeFile(noticeFilePath, content);
+        console.log(contentUrl);
+        const zipLicenseFilePath = await this.getReportContent(contentUrl, this.bearerToken, noticeFilePath);
+        const zipFileData = fs.promises.readFile(zipLicenseFilePath);
+        const fileData = await jszip.loadAsync(zipFileData);
+        const fileKeys = Object.keys(fileData.files);
+        for (const key of fileKeys ){
+            const data = fileData.files[key];
+            if(!data.dir){
+                const content = Buffer.from(await data.async('arraybuffer')).toString();
+                const modContent = await this.modTextContent(content, this.bdProjectName, this.bdVersionName);
+                await fs.promises.writeFile(noticeFilePath, modContent);
+                console.log(`License file written to ${noticeFilePath}`);
+                await fs.promises.unlink(zipLicenseFilePath);
+            }
+        }
     }
 
     async modifyNoticeFile(modifyNoticeDirectory: string, noticeFilePath: string): Promise<void> {
@@ -79,7 +91,7 @@ export class BlackDuckNotice extends BlackDuckAPICalls {
         const bufferText = fs.promises.readFile(modifyFilePath);
         const txt = await bufferText.toString()
         const modText = await this.modTextContent(txt, this.bdProjectName, this.bdVersionName);
-        await fs.promises.writeFile(noticeFilePath, modText);
+        await fs.promises.writeFile(noticeFilePath, modText, );
     }
 
     async getLatestNoticeFile(noticeFilePath: string): Promise<void> {

@@ -5,6 +5,8 @@ import { IBlackDuckVersion } from "../models/IBlackDuckVersion";
 import { IBlackDuckReportList, IBlackDuckReport, IBlackDuckReportRequestBody } from '../models/IBlackDuckReport';
 import * as https from 'https';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class BlackDuckAPICalls {
     public bdToken: string;
@@ -85,7 +87,7 @@ export class BlackDuckAPICalls {
         return await this.request(options, JSON.stringify(requestBody));
     }
 
-    async getReportContent(_url: string, _bearerToken: string): Promise<IBlackDuckReport> {
+    async getReportContent(_url: string, _bearerToken: string, noticeFilePath): Promise<string> {
         console.log("Get Report Content...")
         let options: IRequestOptions = {
             port: 443,
@@ -94,7 +96,7 @@ export class BlackDuckAPICalls {
                 'Accept': 'application/vnd.blackducksoftware.report-4+json'
             }
         }
-        return await this.getRequest(_url, options, this.getAltReportContent);
+        return await this.downloadFile(_url, options, noticeFilePath);
     }
 
     async getAltReportContent(malformedBody: string): Promise<IBlackDuckReport>{
@@ -201,6 +203,37 @@ export class BlackDuckAPICalls {
                 reject(error);
             });
             req.end();
+        });
+    }
+
+    async downloadFile(url: string, options: IRequestOptions, noticeFilePath): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const zipPath = `${path.dirname(noticeFilePath)}/bdlicense.zip`;
+            const file = fs.createWriteStream(zipPath)
+            const req = https.get(url, options, (res) => {
+                if (res.statusCode > 400 && res.statusCode <= 500)
+                {
+                    return reject(new Error(`status code ${res.statusCode}`));
+                }
+                res.pipe(file);
+
+                res.on('end', () => {
+                    try
+                    {
+                        console.log("File obtained")
+                    }
+                    catch (error)
+                    {
+                        reject(error)
+                    }
+                    resolve(zipPath);
+                });
+
+                file.on("finish", () => {
+                    file.close();
+                    console.log(`Zip file downloaded to ${zipPath}`);
+                });
+            });
         });
     }
 }

@@ -64,11 +64,11 @@ stages:
           --detect.notices.report.path="$(System.DefaultWorkingDirectory)"
       continueOnError: true
     
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Pipeline Artifact: LicenseFile'
-      inputs:
-        targetPath: '$(System.DefaultWorkingDirectory)/$(Blackduck_NoticeFileName)'
-        artifact: licensefile
+    # - task: PublishPipelineArtifact@1
+    #   displayName: 'Publish Pipeline Artifact: LicenseFile'
+    #   inputs:
+    #     targetPath: '$(System.DefaultWorkingDirectory)/$(Blackduck_NoticeFileName)'
+    #     artifact: licensefile
     
     # - task: noticegenerator@0
     #   inputs:
