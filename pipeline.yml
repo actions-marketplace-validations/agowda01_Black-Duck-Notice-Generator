@@ -27,8 +27,8 @@ stages:
 
     - task: NodeTool@0
       inputs:
-        versionSpec: '10.x'
-      displayName: 'Use Node 10'
+        versionSpec: '20.x'
+      displayName: 'Use Node 20'
 
     - task: TfxInstaller@3
       inputs:
@@ -43,10 +43,10 @@ stages:
         command: custom
         customCommand: 'run build'
 
-    - task: synopsys-detect.synopsys-detect.synopsys-detect-task.SynopsysDetectTask@6
+    - task: BlackDuckDetectTask@10
       displayName: 'BlackDuck Scan'
       inputs:
-        BlackDuckService: blackduck-service-token
+        BlackDuckScaService: black-duck-service-connection
         DetectArguments: |
           --detect.project.name="$(Blackduck_Project)"
           --detect.project.version.name="$(Blackduck_Version)"
