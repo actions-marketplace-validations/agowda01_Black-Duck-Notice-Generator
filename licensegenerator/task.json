@@ -8,7 +8,7 @@
   "category": "Utility",
   "author": "ProductTech",
   "version": {
-    "Major": 1,
+    "Major": 2,
     "Minor": 0,
     "Patch": 0
   },
@@ -16,7 +16,7 @@
   "inputs": [
     {
       "name": "blackduckconnection",
-      "type": "connectedService:SynopsysBlackDuck",
+      "type": "connectedService:BlackDuckSca",
       "label": "Service connection name for Black Duck",
       "defaultValue": "",
       "required": false,
@@ -88,7 +88,7 @@
     }
   ],
   "execution": {
-    "Node10": {
+    "Node20_1": {
       "target": "./dist/index.js"
     }
   }

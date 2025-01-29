@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "alle-bd-notices-extension",
   "name": "Alle Notice File Generator",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "publisher": "ProductTech",
   "targets": [
     {
