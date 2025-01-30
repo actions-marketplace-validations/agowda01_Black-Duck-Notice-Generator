@@ -1,4 +1,4 @@
-name: '0.1$(rev:.r)'
+name: '1.0$(rev:.r)'
 
 trigger:
 - main
@@ -79,7 +79,7 @@ stages:
     #     generateNoticeFile: true
     #     getLatestNoticeFile: true
 
-    - task: PackageAzureDevOpsExtension@3
+    - task: PackageAzureDevOpsExtension@5
       displayName: 'Package Extension: Notice Generator'
       name: 'packageStep'
       inputs:
@@ -117,19 +117,23 @@ stages:
               inputs:
                 version: "v0.11.x"
 
-            - task: PublishAzureDevOpsExtension@3
+# details on v5 task
+# https://github.com/microsoft/azure-devops-extension-tasks/blob/main/BuildTasks/PublishExtension/v5/task.json
+
+            - task: PublishAzureDevOpsExtension@5 
               inputs:
                 connectTo: 'VsTeam'
                 connectedServiceName: 'ado-extension-connection'
                 fileType: 'vsix'
                 vsixFile: '$(Pipeline.Workspace)/task/blackducklicensegenerator.vsix'
                 publisherId: 'ProductTech'
-                extensionId: 'alle-bd-license-generator'
-                extensionName: 'Black Duck License Generator'
+                extensionId: 'alle-bd-license-generator-test'
+                extensionName: 'Black Duck License Generator Test'
+                updateTasksId: true
                 updateTasksVersion: false
                 extensionVisibility: 'private'
                 extensionPricing: 'free'
-                extensionTag: '-dev'
+                extensionTag: '-test'
 
 - stage: prod
   dependsOn: build
