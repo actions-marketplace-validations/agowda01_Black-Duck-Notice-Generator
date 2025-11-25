@@ -19,7 +19,7 @@ export class BlackDuckAPICalls {
         this.bdToken = _bdToken;
         this.bdProjectName = _bdProjectName;
         this.bdVersionName = _bdVersionName;
-        this.baseUrl = _baseUrl;
+        this.baseUrl = _baseUrl.replace(/^https:\/\//, "").replace(/\/$/, '');
     }
 
     async authenticate(_baseUrl, _bdToken: string): Promise<string> {

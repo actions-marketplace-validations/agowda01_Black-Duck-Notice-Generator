@@ -27,7 +27,7 @@ async function run() {
     {
         let bdCreds: IBlackDuckConfig = await getBlackDuckCredentials(bdService);
         task.setSecret(bdCreds.blackduckApiToken);
-        blackduckNotice = new BlackDuckNotice(bdCreds.blackduckApiToken, bdProjectName, bdVersionName, baseUrl);
+        blackduckNotice = new BlackDuckNotice(bdCreds.blackduckApiToken, bdProjectName, bdVersionName, bdCreds.blackduckUrl);
     }
 
     else if (bdService === undefined && typeof bdTkn !== undefined)
