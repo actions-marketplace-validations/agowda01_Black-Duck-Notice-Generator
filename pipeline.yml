@@ -43,6 +43,14 @@ stages:
         command: custom
         customCommand: 'run build'
 
+    - task: PowerShell@2
+      displayName: 'Delete .npmrc files'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Remove-Item "$(System.DefaultWorkingDirectory)/.npmrc" -ErrorAction SilentlyContinue
+          Remove-Item "$(System.DefaultWorkingDirectory)/licensegenerator/.npmrc" -ErrorAction SilentlyContinue
+
     - task: BlackDuckDetectTask@10
       displayName: 'BlackDuck Scan'
       inputs:
