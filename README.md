@@ -1,4 +1,4 @@
-# Black Duck Notice Generator - GitHub Action
+# Black Duck Notice Generator - GitHub Action 
 
 Generate and manage Black Duck license notice files for your projects using GitHub Actions.
 
