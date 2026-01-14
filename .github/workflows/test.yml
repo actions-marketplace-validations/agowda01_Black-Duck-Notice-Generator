@@ -1,0 +1,93 @@
+name: Test Action
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd licensegenerator
+          npm install
+
+      - name: Build
+        run: |
+          cd licensegenerator
+          npm run build
+
+      - name: Check build output
+        run: |
+          if [ ! -f "licensegenerator/dist/index.js" ]; then
+            echo "Build failed: dist/index.js not found"
+            exit 1
+          fi
+          echo "Build successful: dist/index.js exists"
+
+  test-action-direct-token:
+    runs-on: ubuntu-latest
+    needs: build
+    if: vars.BLACKDUCK_URL != '' && secrets.BLACKDUCK_TOKEN != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and Build
+        run: |
+          cd licensegenerator
+          npm install
+          npm run build
+
+      - name: Test Action (Direct Token)
+        uses: ./
+        with:
+          blackduck-url: ${{ vars.BLACKDUCK_URL }}
+          blackduck-token: ${{ secrets.BLACKDUCK_TOKEN }}
+          project-name: 'TestProject'
+          version-name: 'v1.0.0'
+          get-latest-notice-file: 'true'
+
+  test-action-env-var:
+    runs-on: ubuntu-latest
+    needs: build
+    if: vars.BLACKDUCK_URL != '' && secrets.BLACKDUCK_TOKEN != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and Build
+        run: |
+          cd licensegenerator
+          npm install
+          npm run build
+
+      - name: Test Action (Env Var Fallback)
+        uses: ./
+        env:
+          BLACKDUCK_TOKEN: ${{ secrets.BLACKDUCK_TOKEN }}
+        with:
+          blackduck-url: ${{ vars.BLACKDUCK_URL }}
+          project-name: 'TestProject'
+          version-name: 'v1.0.0'
+          generate-notice-file: 'true'

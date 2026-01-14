@@ -1,6 +1,0 @@
-node_modules
-*.vsix
-.vscode
-.taskkey
-dist-debug
-local
