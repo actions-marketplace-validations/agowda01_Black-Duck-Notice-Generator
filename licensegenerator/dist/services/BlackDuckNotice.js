@@ -67,23 +67,33 @@ class BlackDuckNotice extends BlackDuckApiCalls_1.BlackDuckAPICalls {
         let recentReportDetails = await this.getReportDetails(reportUrl, this.bearerToken);
         if (recentReportDetails.totalCount <= 0) {
             try {
+                console.log("No reports found. Creating new report...");
                 await this.postNotice(reportUrl, this.bearerToken);
                 recentReportDetails = await this.getReportDetails(reportUrl, this.bearerToken);
-                let numberOfchecks = 0;
-                while (recentReportDetails.items[0].status !== "COMPLETED" || numberOfchecks > 24) {
-                    recentReportDetails = await this.checkNoticeState(reportUrl, 5000);
-                    numberOfchecks++;
-                }
             }
             catch (error) {
-                console.log(error);
+                throw new Error(`Failed to create license report: ${error.message}`);
             }
         }
         if (!recentReportDetails || !recentReportDetails.items || recentReportDetails.items.length === 0) {
             throw new Error(`No license reports found. Please ensure a report has been generated for this version.`);
         }
+        let numberOfChecks = 0;
+        const maxChecks = 24;
+        while (recentReportDetails.items[0].status !== "COMPLETED" && numberOfChecks < maxChecks) {
+            console.log(`Report status: ${recentReportDetails.items[0].status}. Waiting for completion... (${numberOfChecks + 1}/${maxChecks})`);
+            recentReportDetails = await this.checkNoticeState(reportUrl, 5000);
+            numberOfChecks++;
+        }
+        if (recentReportDetails.items[0].status !== "COMPLETED") {
+            throw new Error(`Report generation timed out. Current status: ${recentReportDetails.items[0].status}. Please try again later or check Black Duck.`);
+        }
+        console.log("Report is ready for download.");
         const reportContentLinks = recentReportDetails.items[0]._meta.links;
         const reportContentUrl = reportContentLinks.find(({ rel }) => rel === "download");
+        if (!reportContentUrl) {
+            throw new Error(`Download link not found in report metadata.`);
+        }
         return reportContentUrl.href;
     }
     async checkNoticeState(reportUrl, timer) {
