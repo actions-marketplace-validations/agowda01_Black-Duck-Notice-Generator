@@ -2,8 +2,7 @@
 node_modules/
 
 # Build outputs
-licensegenerator/dist/
-dist-debug/
+
 
 # Logs
 *.log
