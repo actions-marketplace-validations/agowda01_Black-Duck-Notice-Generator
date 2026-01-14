@@ -47,8 +47,14 @@ class BlackDuckNotice extends BlackDuckApiCalls_1.BlackDuckAPICalls {
         this.bearerToken = await this.authenticate(this.baseUrl, this.bdToken);
         let projectUrl = `https://${this.baseUrl}/api/projects?q=name:${this.bdProjectName}`;
         const projectDetails = await this.getProjects(projectUrl, this.bearerToken);
+        if (!projectDetails || !projectDetails.items || projectDetails.items.length === 0) {
+            throw new Error(`Project "${this.bdProjectName}" not found in Black Duck. Please verify the project name.`);
+        }
         const versionUrl = `${projectDetails.items[0]._meta.href}/versions?q=versionName:${this.bdVersionName}&limit=1`;
         let versionDetails = await this.getVersions(versionUrl, this.bearerToken);
+        if (!versionDetails || !versionDetails.items || versionDetails.items.length === 0) {
+            throw new Error(`Version "${this.bdVersionName}" not found for project "${this.bdProjectName}". Please verify the version name.`);
+        }
         return versionDetails;
     }
     async getLicenseReportUrl(version) {
@@ -72,6 +78,9 @@ class BlackDuckNotice extends BlackDuckApiCalls_1.BlackDuckAPICalls {
             catch (error) {
                 console.log(error);
             }
+        }
+        if (!recentReportDetails || !recentReportDetails.items || recentReportDetails.items.length === 0) {
+            throw new Error(`No license reports found. Please ensure a report has been generated for this version.`);
         }
         const reportContentLinks = recentReportDetails.items[0]._meta.links;
         const reportContentUrl = reportContentLinks.find(({ rel }) => rel === "download");
